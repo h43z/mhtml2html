@@ -1,9 +1,1 @@
-# Node Modules
 node_modules
-
-# MHTML and HTML
-.mhtml
-.html
-
-# Build
-dist
