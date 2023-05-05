@@ -1,39 +1,28 @@
-/**
- * mhtml2html
- *
- * @Author : Mayank Sindwani
- * @Date   : 2016-09-05
- * @Description : Converts mhtml to html.
- *
- * Licensed under the MIT License
- * Copyright(c) 2016 Mayank Sindwani
- **/
-
 const QuotedPrintable = require('quoted-printable');
 const Base64 = require('base-64');
 
 // Asserts a condition.
-function assert(condition, error) {
+  function assert(condition, error) {
     if (!condition) {
-        throw new Error(error);
+      throw new Error(error);
     }
     return true;
-}
+  }
 
 // Default DOM parser (browser only).
-function defaultDOMParser(asset) {
+  function defaultDOMParser(asset) {
     assert(typeof DOMParser !== 'undefined', 'No DOM parser available');
     return {
-        window: {
-            document: new DOMParser().parseFromString(asset, "text/html")
-        }
+      window: {
+        document: new DOMParser().parseFromString(asset, "text/html")
+      }
     };
-}
+  }
 
 // Returns an absolute url from base and relative paths.
-function absoluteURL(base, relative) {
+  function absoluteURL(base, relative) {
     if (relative.indexOf('http://') === 0 || relative.indexOf('https://') === 0) {
-        return relative;
+      return relative;
     }
 
     const stack = base.split('/');
@@ -42,247 +31,247 @@ function absoluteURL(base, relative) {
     stack.pop();
 
     for (let i = 0; i < parts.length; i++) {
-        if (parts[i] == ".") {
-            continue;
-        } else if (parts[i] == "..") {
-            stack.pop();
-        } else {
-            stack.push(parts[i]);
-        }
+      if (parts[i] == ".") {
+        continue;
+      } else if (parts[i] == "..") {
+        stack.pop();
+      } else {
+        stack.push(parts[i]);
+      }
     }
 
     return stack.join('/');
-}
+  }
 
 // Replace asset references with the corresponding data.
-function replaceReferences(media, base, asset) {
+  function replaceReferences(media, base, asset) {
     const CSS_URL_RULE = 'url(';
-    let reference, i;
+      let reference, i;
 
-    for (i = 0; (i = asset.indexOf(CSS_URL_RULE, i)) > 0; i += reference.length) {
+      for (i = 0; (i = asset.indexOf(CSS_URL_RULE, i)) > 0; i += reference.length) {
         i += CSS_URL_RULE.length;
         reference = asset.substring(i, asset.indexOf(')', i));
 
-        // Get the absolute path of the referenced asset.
-        const path = absoluteURL(base, reference.replace(/(\"|\')/g,''));
-        if (media[path] != null) {
-            if (media[path].type === 'text/css') {
-                media[path].data = replaceReferences(media, base, media[path].data);
-            }
-            // Replace the reference with an encoded version of the resource.
-            try {
-                const embeddedAsset = `'data:${media[path].type};base64,${(
-                    media[path].encoding === 'base64' ?
-                        media[path].data :
-                        Base64.encode(media[path].data)
-                )}'`;
-                asset = `${asset.substring(0, i)}${embeddedAsset}${asset.substring(i + reference.length)}`;
-            } catch(e) {
-                console.warn(e);
-            }
+    // Get the absolute path of the referenced asset.
+      const path = absoluteURL(base, reference.replace(/(\"|\')/g,''));
+    if (media[path] != null) {
+      if (media[path].type === 'text/css') {
+        media[path].data = replaceReferences(media, base, media[path].data);
+      }
+      // Replace the reference with an encoded version of the resource.
+        try {
+          const embeddedAsset = `'data:${media[path].type};base64,${(
+            media[path].encoding === 'base64' ?
+            media[path].data :
+            Base64.encode(media[path].data)
+          )}'`;
+          asset = `${asset.substring(0, i)}${embeddedAsset}${asset.substring(i + reference.length)}`;
+        } catch(e) {
+          console.warn(e);
         }
     }
-    return asset;
-}
+      }
+      return asset;
+    }
 
 // Converts the provided asset to a data URI based on the encoding.
-function convertAssetToDataURI(asset) {
+  function convertAssetToDataURI(asset) {
     switch(asset.encoding) {
-        case 'quoted-printable':
-            return `data:${asset.type};utf8,${escape(QuotedPrintable.decode(asset.data))}`;
-        case 'base64':
-            return `data:${asset.type};base64,${asset.data}`;
-        default:
-            return `data:${asset.type};base64,${Base64.encode(asset.data)}`;
+      case 'quoted-printable':
+        return `data:${asset.type};utf8,${escape(QuotedPrintable.decode(asset.data))}`;
+      case 'base64':
+        return `data:${asset.type};base64,${asset.data}`;
+      default:
+        return `data:${asset.type};base64,${Base64.encode(asset.data)}`;
     }
-}
+  }
 
 // Main module.
-const mhtml2html = {
+  const mhtml2html = {
 
     /**
-     * Parse
-     *
-     * Description: Returns an object representing the mhtml and its resources.
-     * @param {mhtml} // The mhtml string.
-     * @param {options.htmlOnly} // A flag to determine which parsed object to return.
-     * @param {options.parseDOM} // The callback to parse an HTML string.
-     * @returns an html document without resources if htmlOnly === true; an MHTML parsed object otherwise.
-     */
+    * Parse
+    *
+    * Description: Returns an object representing the mhtml and its resources.
+    * @param {mhtml} // The mhtml string.
+    * @param {options.htmlOnly} // A flag to determine which parsed object to return.
+    * @param {options.parseDOM} // The callback to parse an HTML string.
+    * @returns an html document without resources if htmlOnly === true; an MHTML parsed object otherwise.
+    */
     parse: (mhtml, { htmlOnly = false, parseDOM  = defaultDOMParser } = {}) => {
-        const MHTML_FSM = {
-            MHTML_HEADERS : 0,
-            MTHML_CONTENT : 1,
-            MHTML_DATA    : 2,
-            MHTML_END     : 3
-        };
+      const MHTML_FSM = {
+        MHTML_HEADERS : 0,
+        MTHML_CONTENT : 1,
+        MHTML_DATA    : 2,
+        MHTML_END     : 3
+      };
 
-        let asset, headers, content, media, frames;  // Record-keeping.
+      let asset, headers, content, media, frames;  // Record-keeping.
         let location, encoding, type, id;            // Content properties.
         let state, key, next, index, i, l;           // States.
         let boundary;                                // Boundaries.
 
         headers = { };
-        content = { };
-        media   = { };
-        frames  = { };
+      content = { };
+      media   = { };
+      frames  = { };
 
-        // Initial state and index.
+      // Initial state and index.
         state = MHTML_FSM.MHTML_HEADERS;
-        i = l = 0;
+      i = l = 0;
 
-        // Discards characters until a non-whitespace character is encountered.
+      // Discards characters until a non-whitespace character is encountered.
         function trim() {
-            while (assert(i < mhtml.length - 1, 'Unexpected EOF') && /\s/.test(mhtml[i])) {
-                if (mhtml[++i] == '\n') { l++; }
-            }
+          while (assert(i < mhtml.length - 1, 'Unexpected EOF') && /\s/.test(mhtml[i])) {
+            if (mhtml[++i] == '\n') { l++; }
+          }
         }
 
-        // Returns the next line from the index.
+// Returns the next line from the index.
         function getLine(encoding) {
-            const j = i;
+          const j = i;
 
-            // Wait until a newline character is encountered or when we exceed the str length.
+          // Wait until a newline character is encountered or when we exceed the str length.
             while (mhtml[i] !== '\n' && assert(i++ < mhtml.length - 1, 'Unexpected EOF'));
-            i++; l++;
+          i++; l++;
 
-            const line = mhtml.substring(j, i);
+          const line = mhtml.substring(j, i);
 
-            // Return the (decoded) line.
+          // Return the (decoded) line.
             if (encoding === 'quoted-printable') {
-                return QuotedPrintable.decode(line);
+              return QuotedPrintable.decode(line);
             }
-            if (encoding === 'base64') {
-                return line.trim();
-            }
-            return line;
+          if (encoding === 'base64') {
+            return line.trim();
+          }
+          return line;
         }
 
-        // Splits headers from the first instance of ':'.
+      // Splits headers from the first instance of ':'.
         function splitHeaders(line, obj) {
-            const m = line.indexOf(':');
-            if (m > -1) {
-                key = line.substring(0, m).trim();
-                obj[key] = line.substring(m + 1, line.length).trim();
-            } else {
-                assert(typeof key !== 'undefined', `Missing MHTML headers; Line ${l}`);
-                obj[key] += line.trim();
-            }
+          const m = line.indexOf(':');
+          if (m > -1) {
+            key = line.substring(0, m).trim();
+            obj[key] = line.substring(m + 1, line.length).trim();
+          } else {
+            assert(typeof key !== 'undefined', `Missing MHTML headers; Line ${l}`);
+            obj[key] += line.trim();
+          }
         }
 
-        while (state != MHTML_FSM.MHTML_END) {
-            switch(state) {
-                // Fetch document headers including the boundary to use.
-                case MHTML_FSM.MHTML_HEADERS: {
-                    next = getLine();
-                    // Use a new line or null character to determine when we should
-                    // stop processing headers.
-                    if (next != 0 && next != '\n') {
-                        splitHeaders(next, headers);
-                    } else {
-                        assert(typeof headers['Content-Type'] !== 'undefined', `Missing document content type; Line ${l}`);
-                        const matches = headers['Content-Type'].match(/boundary=(.*)/m);
+      while (state != MHTML_FSM.MHTML_END) {
+        switch(state) {
+            // Fetch document headers including the boundary to use.
+              case MHTML_FSM.MHTML_HEADERS: {
+                next = getLine();
+                // Use a new line or null character to determine when we should
+                // stop processing headers.
+                  if (next != 0 && next != '\n') {
+                    splitHeaders(next, headers);
+                  } else {
+                    assert(typeof headers['Content-Type'] !== 'undefined', `Missing document content type; Line ${l}`);
+                    const matches = headers['Content-Type'].match(/boundary=(.*)/m);
 
-                        // Ensure the extracted boundary exists.
-                        assert(matches != null, `Missing boundary from document headers; Line ${l}`);
-                        boundary = matches[1].replace(/\"/g,'');
+                    // Ensure the extracted boundary exists.
+                      assert(matches != null, `Missing boundary from document headers; Line ${l}`);
+                    boundary = matches[1].replace(/\"/g,'');
 
-                        trim();
-                        next = getLine();
-
-                        // Expect the next boundary to appear.
-                        assert(next.includes(boundary), `Expected boundary; Line ${l}`);
-                        content = { };
-                        state = MHTML_FSM.MTHML_CONTENT;
-                    }
-                    break;
-                }
-
-                // Parse and store content headers.
-                case MHTML_FSM.MTHML_CONTENT: {
+                    trim();
                     next = getLine();
 
-                    // Use a new line or null character to determine when we should
-                    // stop processing headers.
-                    if (next != 0 && next != '\n') {
-                        splitHeaders(next, content);
-                    } else {
-                        encoding = content['Content-Transfer-Encoding'];
-                        type     = content['Content-Type'];
-                        id       = content['Content-ID'];
-                        location = content['Content-Location'];
+                    // Expect the next boundary to appear.
+                      assert(next.includes(boundary), `Expected boundary; Line ${l}`);
+                    content = { };
+                    state = MHTML_FSM.MTHML_CONTENT;
+                  }
+                break;
+              }
 
-                        // Assume the first boundary to be the document.
-                        if (typeof index === 'undefined') {
-                            index = location;
-                            assert(typeof index !== 'undefined' && type === "text/html", `Index not found; Line ${l}`);
-                        }
+            // Parse and store content headers.
+              case MHTML_FSM.MTHML_CONTENT: {
+                next = getLine();
 
-                        // Ensure the extracted information exists.
-                        assert(typeof id !== 'undefined' || typeof location !== 'undefined',
-                            `ID or location header not provided;  Line ${l}`);
-                        assert(typeof encoding !== 'undefined', `Content-Transfer-Encoding not provided;  Line ${l}`);
-                        assert(typeof type     !== 'undefined', `Content-Type not provided; Line ${l}`);
+                // Use a new line or null character to determine when we should
+                // stop processing headers.
+                  if (next != 0 && next != '\n') {
+                    splitHeaders(next, content);
+                  } else {
+                    encoding = content['Content-Transfer-Encoding'];
+                    type     = content['Content-Type'];
+                    id       = content['Content-ID'];
+                    location = content['Content-Location'];
 
-                        asset = {
-                            encoding : encoding,
-                            type : type,
-                            data : '',
-                            id : id
-                        };
+                    // Assume the first boundary to be the document.
+                      if (typeof index === 'undefined') {
+                        index = location;
+                        assert(typeof index !== 'undefined' && type === "text/html", `Index not found; Line ${l}`);
+                      }
 
-                        // Keep track of frames by ID.
-                        if (typeof id !== 'undefined') {
-                            frames[id] = asset;
-                        }
+                    // Ensure the extracted information exists.
+                      assert(typeof id !== 'undefined' || typeof location !== 'undefined',
+                        `ID or location header not provided;  Line ${l}`);
+                    assert(typeof encoding !== 'undefined', `Content-Transfer-Encoding not provided;  Line ${l}`);
+                    assert(typeof type     !== 'undefined', `Content-Type not provided; Line ${l}`);
 
-                        // Keep track of resources by location.
-                        if (typeof location !== 'undefined' && typeof media[location] === 'undefined') {
-                            media[location] = asset;
-                        }
+                    asset = {
+                      encoding : encoding,
+                      type : type,
+                      data : '',
+                      id : id
+                    };
 
-                        trim();
-                        content = { };
-                        state = MHTML_FSM.MHTML_DATA;
-                    }
-                    break;
-                }
+                    // Keep track of frames by ID.
+                      if (typeof id !== 'undefined') {
+                        frames[id] = asset;
+                      }
 
-                // Map data to content.
-                case MHTML_FSM.MHTML_DATA: {
+                    // Keep track of resources by location.
+                      if (typeof location !== 'undefined' && typeof media[location] === 'undefined') {
+                        media[location] = asset;
+                      }
+
+                    trim();
+                    content = { };
+                    state = MHTML_FSM.MHTML_DATA;
+                  }
+                break;
+              }
+
+            // Map data to content.
+              case MHTML_FSM.MHTML_DATA: {
+                next = getLine(encoding);
+
+                // Build the decoded string.
+                  while (!next.includes(boundary)) {
+                    asset.data += next;
                     next = getLine(encoding);
+                  }
 
-                    // Build the decoded string.
-                    while (!next.includes(boundary)) {
-                        asset.data += next;
-                        next = getLine(encoding);
-                    }
+                try {
+                  // Decode unicode.
+                    asset.data = decodeURIComponent(escape(asset.data));
+                } catch (e) { e; }
 
-                    try {
-                        // Decode unicode.
-                        asset.data = decodeURIComponent(escape(asset.data));
-                    } catch (e) { e; }
+                // Ignore assets if 'htmlOnly' is set.
+                  if (htmlOnly === true && typeof index !== 'undefined') {
+                    return parseDOM(asset.data);
+                  }
 
-                    // Ignore assets if 'htmlOnly' is set.
-                    if (htmlOnly === true && typeof index !== 'undefined') {
-                        return parseDOM(asset.data);
-                    }
-
-                    // Set the finishing state if there are no more characters.
-                    state = (i >= mhtml.length - 1 ? MHTML_FSM.MHTML_END : MHTML_FSM.MTHML_CONTENT);
-                    break;
-                }
-            }
+                // Set the finishing state if there are no more characters.
+                  state = (i >= mhtml.length - 1 ? MHTML_FSM.MHTML_END : MHTML_FSM.MTHML_CONTENT);
+                break;
+              }
         }
+      }
 
-        return {
-            frames: frames,
-            media: media,
-            index: index
-        };
+      return {
+        frames: frames,
+        media: media,
+        index: index
+      };
     },
 
-    /**
+/**
      * Convert
      *
      * Description: Accepts an mhtml string or parsed object and returns the converted html.
